@@ -1,5 +1,6 @@
 const http = require("node:http");
 const fs = require("fs/promises");
+const { error } = require("node:console");
 const server = http.createServer((request, response) => {
   const { method, url } = request;
   if (method === "GET" && url === "/api") {
@@ -31,23 +32,22 @@ const server = http.createServer((request, response) => {
     request.on("data", (packet) => {
       body += packet.toString();
     });
-    request.on("end", async() => {
-        try{
-
-        
+    request.on("end", () => {
       const newUser = JSON.parse(body);
-      const fileData = fs.readFile("./data/users.json","utf-8")
-      const users = JSON.parse(fileData)
-      users.push(newUser);
-      fs.writeFile("./data/users.json", JSON.stringify(users, null, 2), "utf-8")
-      response.setHeader("Content-Type", "application/json");
-      response.statusCode = 201;
-      response.end(JSON.stringify({message: "User added successfully", user:newUser}))
-      }
-      catch(error){
-        response.statusCode = 500
-        response.end(JSON.stringify({error:"Failed to add user"}))
-      }
+      fs.readFile("./data/users.json", "utf-8")
+        .then((data) => {
+          const users = JSON.parse(data);
+          users.push(newUser);
+          return fs.writeFile(
+            "./data/users.json",
+            JSON.stringify(users, null, 2)
+          );
+        })
+        .then(() => {
+          response.setHeader("Content-Type", "application/json");
+          response.statusCode = 201;
+          response.end(JSON.stringify({ message: "User added successfully" }));
+        });
     });
   }
 });
