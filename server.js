@@ -50,6 +50,38 @@ const server = http.createServer((request, response) => {
         });
     });
   }
+  if (method === "POST" && url === "/api/posts") {
+    let body = "";
+    request.on("data", (packet) => {
+      body += packet.toString();
+    });
+    request.on("end", () => {
+      const newPost = JSON.parse(body);
+      fs.readFile("./data/posts.json", "utf-8")
+        .then((data) => {
+          const posts = JSON.parse(data);
+          posts.push(newPost);
+          return fs.writeFile(
+            "./data/posts.json",
+            JSON.stringify(posts, null, 4)
+          );
+        })
+        .then(() => {
+          response.setHeader("Content-Type", "application/json");
+          response.statusCode = 201;
+          response.end(
+            JSON.stringify({ message: "Post created successfully" })
+          );
+        })
+        .catch((error) => {
+          response.setHeader("Content-Type", "application/json");
+          response.statusCode = 500;
+          response.end(
+            JSON.stringify({ error: "Internal Server Error, needs checking!" })
+          );
+        });
+    });
+  }
 });
 
 server.listen(9090, (err) => {
